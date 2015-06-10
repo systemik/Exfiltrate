@@ -43,7 +43,7 @@ Keyboard_ Keyboard;
 
 extern const u8 _hidReportDescriptor[] PROGMEM;
 const u8 _hidReportDescriptor[] = {
-	
+/*
 	//	Mouse
     0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)	// 54
     0x09, 0x02,                    // USAGE (Mouse)
@@ -73,7 +73,7 @@ const u8 _hidReportDescriptor[] = {
     0x81, 0x06,                    //     INPUT (Data,Var,Rel)
     0xc0,                          //   END_COLLECTION
     0xc0,                          // END_COLLECTION
-
+*/
 	//	Keyboard
     0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)	// 47
     0x09, 0x06,                    // USAGE (Keyboard)
@@ -93,18 +93,6 @@ const u8 _hidReportDescriptor[] = {
     0x75, 0x08,                    //   REPORT_SIZE (8)
     0x81, 0x03,                    //   INPUT (Cnst,Var,Abs)
     
-//Added for Caps Lock Info
-    0x95, 0x05,                    //   REPORT_COUNT (5)
-    0x75, 0x01,                    //   REPORT_SIZE (1)
-    0x05, 0x08,                    //   USAGE_PAGE (LEDs)
-    0x19, 0x01,                    //   USAGE_MINIMUM (1)
-    0x29, 0x05,                    //   USAGE_MAXIMUM (5)
-    0x91, 0x02,                    //   OUTPUT (Data,Var,Abs) // LED report
-    0x95, 0x01,                    //   REPORT_COUNT (1)
-    0x75, 0x03,                    //   REPORT_SIZE (3)
-    0x91, 0x01,                    //   OUTPUT (Constant) // padding 
-//End of addition
-    
 	0x95, 0x06,                    //   REPORT_COUNT (6)
     0x75, 0x08,                    //   REPORT_SIZE (8)
     0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
@@ -116,7 +104,8 @@ const u8 _hidReportDescriptor[] = {
     0x81, 0x00,                    //   INPUT (Data,Ary,Abs)
     0xc0,                          // END_COLLECTION
 
-#ifdef RAWHID_ENABLED
+    
+/*#ifdef RAWHID_ENABLED
 	//	RAW HID
 	0x06, LSB(RAWHID_USAGE_PAGE), MSB(RAWHID_USAGE_PAGE),	// 30
 	0x0A, LSB(RAWHID_USAGE), MSB(RAWHID_USAGE),
@@ -135,7 +124,7 @@ const u8 _hidReportDescriptor[] = {
 	0x09, 0x02,				// usage
 	0x91, 0x02,				// Output (array)
 	0xC0					// end collection
-#endif
+#endif*/
 };
 
 extern const HIDDescriptor _hidInterface PROGMEM;
@@ -203,20 +192,7 @@ bool WEAK HID_Setup(Setup& setup)
 			_hid_idle = setup.wValueL;
 			return true;
 		}
-	//Addition Caps Lock Detection
-		if (HID_SET_REPORT == r)
-		{
-			if (setup.wLength == 2) 
-			{
-				uint8_t data[2];
-				if (2 == USB_RecvControl(data, 2)) 
-				{
-					Keyboard.setLedStatus(data[1]);
-				}
-			}
-		}
-    //End of addition
-    }
+	}
 	return false;
 }
 
@@ -288,8 +264,10 @@ Keyboard_::Keyboard_(void)
 {
 }
 
-void Keyboard_::begin(void) 
+uint8_t* _asciimap;
+void Keyboard_::begin(uint8_t *keymap) 
 {
+  _asciimap = keymap;
 }
 
 void Keyboard_::end(void) 
@@ -301,10 +279,10 @@ void Keyboard_::sendReport(KeyReport* keys)
 	HID_SendReport(2,keys,sizeof(KeyReport));
 }
 
-extern
-const uint8_t _asciimap[128] PROGMEM;
+/*extern
+const uint8_t _asciimap[128] PROGMEM;*/
 
-#define SHIFT 0x80
+/*#define SHIFT 0x80
 const uint8_t _asciimap[128] =
 {
 	0x00,             // NUL
@@ -437,7 +415,7 @@ const uint8_t _asciimap[128] =
 	0x35|SHIFT,    // ~
 	0				// DEL
 };
-
+*/
 uint8_t USBPutChar(uint8_t c);
 
 // press() adds the specified key (printing, non-printing, or modifier)
@@ -446,43 +424,35 @@ uint8_t USBPutChar(uint8_t c);
 // call release(), releaseAll(), or otherwise clear the report and resend.
 size_t Keyboard_::press(uint8_t k) 
 {
-	uint8_t i;
-	if (k >= 136) {			// it's a non-printing key (not a modifier)
-		k = k - 136;
-	} else if (k >= 128) {	// it's a modifier key
-		_keyReport.modifiers |= (1<<(k-128));
-		k = 0;
-	} else {				// it's a printing key
-		k = pgm_read_byte(_asciimap + k);
-		if (!k) {
-			setWriteError();
-			return 0;
-		}
-		if (k & 0x80) {						// it's a capital letter or other character reached with shift
-			_keyReport.modifiers |= 0x02;	// the left shift modifier
-			k &= 0x7F;
-		}
-	}
+	_keyReport.keys[1] = 0;	
+	_keyReport.keys[2] = 0;
+	_keyReport.keys[3] = 0;	
+	_keyReport.keys[4] = 0;
+	_keyReport.keys[5] = 0;	
+	_keyReport.modifiers = 0;
+
 	
-	// Add k to the key report only if it's not already present
-	// and if there is an empty slot.
-	if (_keyReport.keys[0] != k && _keyReport.keys[1] != k && 
-		_keyReport.keys[2] != k && _keyReport.keys[3] != k &&
-		_keyReport.keys[4] != k && _keyReport.keys[5] != k) {
-		
-		for (i=0; i<6; i++) {
-			if (_keyReport.keys[i] == 0x00) {
-				_keyReport.keys[i] = k;
-				break;
-			}
-		}
-		if (i == 6) {
-			setWriteError();
-			return 0;
-		}	
-	}
+	//DST's attempt	
+	_keyReport.keys[0] = pgm_read_byte( _asciimap + (k*2) );
+	_keyReport.modifiers = pgm_read_byte( _asciimap + (k*2)+1 );
+
 	sendReport(&_keyReport);
 	return 1;
+}
+
+void Keyboard_::raw(uint8_t scanCode, uint8_t modifiers)
+{
+	_keyReport.keys[1] = 0;	
+	_keyReport.keys[2] = 0;
+	_keyReport.keys[3] = 0;	
+	_keyReport.keys[4] = 0;
+	_keyReport.keys[5] = 0;	
+  
+	_keyReport.keys[0] = scanCode;
+	_keyReport.modifiers = modifiers; 
+	sendReport(&_keyReport);
+  releaseAll();
+	
 }
 
 // release() takes the specified key out of the persistent key report and
@@ -490,32 +460,7 @@ size_t Keyboard_::press(uint8_t k)
 // it shouldn't be repeated any more.
 size_t Keyboard_::release(uint8_t k) 
 {
-	uint8_t i;
-	if (k >= 136) {			// it's a non-printing key (not a modifier)
-		k = k - 136;
-	} else if (k >= 128) {	// it's a modifier key
-		_keyReport.modifiers &= ~(1<<(k-128));
-		k = 0;
-	} else {				// it's a printing key
-		k = pgm_read_byte(_asciimap + k);
-		if (!k) {
-			return 0;
-		}
-		if (k & 0x80) {							// it's a capital letter or other character reached with shift
-			_keyReport.modifiers &= ~(0x02);	// the left shift modifier
-			k &= 0x7F;
-		}
-	}
-	
-	// Test the key report to see if k is present.  Clear it if it exists.
-	// Check all positions in case the key is present more than once (which it shouldn't be)
-	for (i=0; i<6; i++) {
-		if (0 != k && _keyReport.keys[i] == k) {
-			_keyReport.keys[i] = 0x00;
-		}
-	}
-
-	sendReport(&_keyReport);
+	releaseAll();
 	return 1;
 }
 
@@ -533,23 +478,12 @@ void Keyboard_::releaseAll(void)
 
 size_t Keyboard_::write(uint8_t c)
 {	
-	uint8_t p = press(c);  // Keydown
-	release(c);            // Keyup
-	return p;              // just return the result of press() since release() almost always returns 1
+	uint8_t p = press(c);		// Keydown
+	uint8_t r = release(c);		// Keyup
+	return (p);					// just return the result of press() since release() almost always returns 1
 }
 
-//Addition for CAPS LOCK
-void Keyboard_::setLedStatus(uint8_t s)
-{
-	_ledStatus = s;
-}
 
-uint8_t Keyboard_::getLedStatus(void)
-{
-	return _ledStatus;
-}
-
-//End of Addition
 #endif
 
 #endif /* if defined(USBCON) */

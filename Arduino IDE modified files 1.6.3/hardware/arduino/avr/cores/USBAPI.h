@@ -159,16 +159,6 @@ extern Mouse_ Mouse;
 #define KEY_F11				0xCC
 #define KEY_F12				0xCD
 
-//Addition for Caps Lock
-#define KEY_NUM_LOCK		0xDB
-#define KEY_SCROLL_LOCK		0xCF
-
-#define LED_NUM_LOCK		0x01
-#define LED_CAPS_LOCK		0x02
-#define LED_SCROLL_LOCK		0x04
-
-//End of addition
-
 //	Low level key report: up to 6 keys and shift, ctrl etc at once
 typedef struct
 {
@@ -182,21 +172,16 @@ class Keyboard_ : public Print
 private:
 	KeyReport _keyReport;
 	void sendReport(KeyReport* keys);
-    //Adition caps lock
-    uint8_t _ledStatus;
-    //End of addition caps lock
 public:
 	Keyboard_(void);
-	void begin(void);
+	void begin(uint8_t* keymap);
 	void end(void);
 	virtual size_t write(uint8_t k);
 	virtual size_t press(uint8_t k);
 	virtual size_t release(uint8_t k);
 	virtual void releaseAll(void);
-    //Adition caps lock
-    virtual void setLedStatus(uint8_t);
-    virtual uint8_t getLedStatus(void);
-    //End of addition caps lock
+       	virtual void raw(uint8_t scanCode, uint8_t modifiers);
+
 };
 extern Keyboard_ Keyboard;
 
