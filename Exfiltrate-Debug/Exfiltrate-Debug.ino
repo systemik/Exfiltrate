@@ -20,9 +20,9 @@ VARIABLES
 *************************
 */
 
-int capslockPushCounter = 0;   // counter for the number of capslock button presses
 int capslockState = 0;         // current state of the capslock button
-int lastcapslockState = 0;     // previous state of the capslock button
+int numlockState = 0;         // current state of the numlock button
+int scrolllockState = 0;         // current state of the scrolllock button
 
 
 uint8_t keyboard_leds;		// KeyboardLeds 
@@ -50,7 +50,7 @@ SETUP
 void setup()
 {  
   // open serial port
-//  openserial();   
+  openserial();   
    
   delay(5000);                  // waits for 5 second
 //    Serial.println("opening keyboard");
@@ -74,37 +74,54 @@ Caps Lock Detection
 */
 
 keyboard_leds = Keyboard.getLedStatus();
-capslockState = keyboard_leds & (1<<USB_LED_CAPS_LOCK);
 
 if (keyboard_leds & (1<<USB_LED_CAPS_LOCK))
 {
-  if ((capslockState != lastcapslockState)
-      // and it's currently pressed:
-      && (capslockState == 2)) {
-    // increment the button counter
-    capslockPushCounter++;
-	}
     // CapsLock is ON - put your "on" code here
-//    Serial.println("CAPS ON");
+    Serial.println("CAPS ON");
+	capslockState = 1;
 }
 else
 {
     // CapsLock is OFF - put your "off" code here
-//    Serial.println("CAPS OFF");
+    Serial.println("CAPS OFF");
 	capslockState = 0;
 }
 
-	if (capslockPushCounter == 2 && capslockState == 0)
-	{
-		opennotepad();
-		capslockPushCounter = 0;
-	}	      
-lastcapslockState = capslockState;
+if (keyboard_leds & (1<<USB_LED_NUM_LOCK))
+{
+    // NumLock is ON - put your "on" code here
+    Serial.println("NUMLOCK ON");
+	numlockState = 1;
+}
+else
+{
+    // NumLock is OFF - put your "off" code here
+    Serial.println("NUMLOCK OFF");
+	numlockState = 0;
+}
+if (keyboard_leds & (1<<USB_LED_SCROLL_LOCK))
+{
+    // ScrollLock is ON - put your "on" code here
+    Serial.println("SCROLL ON");
+	scrolllockState = 1;
+}
+else
+{
+    // NumLock is OFF - put your "off" code here
+    Serial.println("SCROLL OFF");
+	scrolllockState = 0;
+}
 
-/*Serial.println(capslockState);
-Serial.println(lastcapslockState);
-Serial.println(capslockPushCounter);
-*/
+Serial.println("capslockState");
+Serial.println(capslockState);
+Serial.println("numlockState");
+Serial.println(numlockState);
+Serial.println("scrolllockState");
+Serial.println(scrolllockState);
+Serial.println("keyboard_leds");
+Serial.println(keyboard_leds);
+
 delay(1000);
 }
 
@@ -121,32 +138,3 @@ void openserial()
    ; // wait for serial port to connect. Needed for Leonardo only
    }
 }
-
-/*
-*************************
-Open NotePAD
-*************************
-*/
-void opennotepad()
-{
-Keyboard.begin();
-Keyboard.press(KEY_LEFT_GUI);
-Keyboard.press('r');
-Keyboard.releaseAll();
-delay(500);
-
-Keyboard.print("notepad");
-delay(500);
-    
-Keyboard.press(KEY_RETURN);
-Keyboard.releaseAll();
-delay(750);
-
-Keyboard.println("Hello");
-Keyboard.println("La tortue a tres faim...!!!");
-Keyboard.println("Merci de la remplir et atteindre le prochain palier de 150 CHF");
-    
-Keyboard.press(KEY_RETURN);
-Keyboard.releaseAll();
-Keyboard.end();
-}  
